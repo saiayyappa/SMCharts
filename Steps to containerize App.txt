@@ -1,0 +1,32 @@
+#Pulling necessary images
+docker pull mysql:8.0.17
+docker pull openjdk
+
+#Creating the mysql container which exposes 3306 endpoint
+docker run --name smcharts-mysql -e MYSQL_ROOT_PASSWORD=root -e MYSQL_DATABASE=testdb -d mysql:8.0.17
+
+#Building the pixo-server, this creates a .jar file inside the target folder in the root of spring boot application
+mvn clean build
+
+#Creating docker image using .jar file using Dockerfile
+FROM openjdk:8 
+
+ADD target/smcharts-0.0.1-SNAPSHOT smcharts-0.0.1-SNAPSHOT.jar 
+
+EXPOSE 8082
+
+ENTRYPOINT ["java", "-jar", "smcharts-0.0.1-SNAPSHOT.jar"]
+
+#Running the pixo-server exposing the 8082 end-point to localhost's 8082 port since most machines have jenkins installed(8080 port is occupied)
+docker run -p 8082:8082 --link smcharts-mysql smcharts
+
+#Logs
+docker logs smcharts
+docker logs smcharts-mysql
+
+========================
+
+#Running the front end, inside the dist/smchartsClient folder
+npm install
+
+ng serve --port 4200
